@@ -5,6 +5,9 @@ import statistics
 import keras
 from keras import layers
 import tensorflow as tf
+import time
+
+start_time = time.time()
 
 #Functions
 
@@ -329,3 +332,9 @@ predic = model.predict([base_MLII,base_V5])
 #Transformar a predição em um vetor de saída
 #Identificando batida através de predição
 vetor_final_predic = tpSig_predc(predic)
+
+end_time = time.time()
+
+final_time = end_time - start_time
+
+print(final_time)
