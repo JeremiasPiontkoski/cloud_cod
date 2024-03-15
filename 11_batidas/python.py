@@ -4,7 +4,6 @@ import pywt
 import statistics
 import keras
 from keras import layers
-import tensorflow as tf
 import time
 
 start_time = time.time()
