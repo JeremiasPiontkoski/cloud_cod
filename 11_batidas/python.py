@@ -228,16 +228,24 @@ def tpSig_predc(predc):
     
   return carac_predic
 
-global extraTime
+global extra_code_time
+extra_code_initial = time.time()
+
+global extra_code_csv_time
+extra_code_csv_initial = time.time()
 
 #Importando dados sinal MIT para DF
 df = pd.read_csv("200.csv",sep=",")
 df.columns = (["Temp","MLII","V5"])
 
+extra_code_csv_time = time.time() - extra_code_csv_initial
+
 #Importando dados annotations MIT para DF
 r_peak = []
 tp_sig = []
 
+global extra_code_txt_time
+extra_code_txt_initial = time.time()
 
 annotations_txt = open("200annotations.txt", "r")
 for index in annotations_txt:
@@ -245,7 +253,7 @@ for index in annotations_txt:
   tp_sig.append(index[26])
 annotations_txt.close()
 
-
+extra_code_txt_time = time.time() - extra_code_txt_initial
 
 del r_peak[0]
 del r_peak[1]
@@ -324,7 +332,6 @@ type_sig = 4  # Number of departments for predictions
 ml2_input = keras.Input(batch_size = 8,shape=(size_sig,1), name="MLII")  # Variable-length sequence of ints
 v5_input = keras.Input(batch_size = 8,shape=(size_sig,1), name="V5")  # Variable-length sequence of ints
 
-
 ml2_features = layers.LSTM(50)(ml2_input)
 
 v5_features = layers.LSTM(50)(v5_input)
@@ -353,25 +360,32 @@ model.compile(
     metrics=['accuracy'],
 )
 
-
+global extra_code_load_h5_time
+extra_code_load_h5_initial = time.time()
 model.load_weights("./200_model_900.h5")
-initialExtra = time.time()
+
+extra_code_load_h5_time = time.time() - extra_code_load_h5_initial
+
 #Aplicar a classificação da batida através do modelo carregado
 #model = keras.saving.load_model('./200_model_900.h5')
+
+global extra_code_predict_h5_time
+extra_code_predict_h5_initial = time.time()
 predic = model.predict([base_MLII,base_V5])
+extra_code_predict_h5_time = time.time() - extra_code_predict_h5_initial
 
 #Transformar a predição em um vetor de saída
 #Identificando batida através de predição
 vetor_final_predic = tpSig_predc(predic)
 
-finalExtra = time.time()
+extra_code_final = time.time()
 end_time = time.time()
 
 #Tempo do código fora das funções executar
-extraTime = finalExtra - initialExtra
+extra_code_time = extra_code_final - extra_code_initial
 
 def getTotalTimeFunctions():
-  sum_time_functions = band_filter_time + carac_morf_time + carac_temp_time + adeq_dts_time + tpSig_predc_time + extraTime
+  sum_time_functions = band_filter_time + carac_morf_time + carac_temp_time + adeq_dts_time + tpSig_predc_time + extra_code_time
   print(f'Tempo de todas as funções executarem: {sum_time_functions}')
   
 def getTotalTimeCode():
@@ -379,17 +393,23 @@ def getTotalTimeCode():
   final_time = end_time - start_time
   print(f'Tempo de todo o código executar: {final_time}')
   
+def getExtraCodeTime():
+  print(f'Tempo do carregamento do csv: {extra_code_csv_time}')
+  print(f'Tempo de carregamento do txt: {extra_code_txt_time}')
+  print(f'Tempo de carregamento do H5: {extra_code_load_h5_time}')
+  print(f'Tempo de execução do predict H5: {extra_code_predict_h5_time}')
+  print(f'Tempo de execução do código extra: {extra_code_time}')
+  
 def getTotalTimeByFunction():
   print(f'band_filter: {band_filter_time}')
   print(f'carac_temp: {carac_temp_time}')
   print(f'carac_morf: {carac_morf_time}')
   print(f'adeq_dts: {adeq_dts_time}')
-  print(f'tpSig_predc: {tpSig_predc_time}')
-  print(f'Código restante: {extraTime}')
+  print(f'tpSig_predc: {tpSig_predc_time}') 
   getTotalTimeFunctions()
-
   
 getTotalTimeByFunction()
+getExtraCodeTime()
 getTotalTimeCode()
 
 #FUNCIONANDO -> band_filter_time, carac_temp_time, carac_morf_time, adeq_dts_time,extraTime
