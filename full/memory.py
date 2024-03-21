@@ -5,19 +5,24 @@ import statistics
 import keras
 from keras import layers
 
-
 import psutil
 import os
 
+band_filter_memory = 0
+carac_temp_memory  = 0
+carac_morf_memory = 0
+adeq_dts_memory = 0
+tpSig_predc_memory = 0
+extra_code_memory = 0
 
 def get_memory_usage():
     process = psutil.Process(os.getpid())
-    # mem = process.memory_info().rss / (1024 ** 2) #Bytes
+    # mem = process.memory_info().rss  #Bytes
     mem = process.memory_info().rss / (1024 ** 2)  # Converte para megabytes
     return mem
 
+total_code_memory = get_memory_usage()
 #Functions
-start_memory = get_memory_usage()
 
 #Filtro Bandpass
 def band_filter(signal):
@@ -209,19 +214,35 @@ def tpSig_predc(predc):
     
   return carac_predic
 
+
+extra_code_csv_memory = 0
+extra_code_txt_memory = 0
+extra_code_pd_memory = 0
+extra_code_lstm_memory = 0
+extra_code_load_h5_memory = 0
+extra_code_predict_h5_memory = 0
+extra_code_memory = get_memory_usage()
+
+extra_code_csv_memory = get_memory_usage()
 #Importando dados sinal MIT para DF
 df = pd.read_csv("200.csv",sep=",")
 df.columns = (["Temp","MLII","V5"])
+extra_code_csv_memory = get_memory_usage() - extra_code_csv_memory
+
 
 #Importando dados annotations MIT para DF
 r_peak = []
 tp_sig = []
 
+
+extra_code_txt_memory = get_memory_usage()
 annotations_txt = open("200annotations.txt", "r")
 for index in annotations_txt:
   r_peak.append(index[15:21])
   tp_sig.append(index[26])
 annotations_txt.close()
+extra_code_txt_memory = get_memory_usage() - extra_code_txt_memory
+
 
 del r_peak[0]
 del r_peak[1]
@@ -236,8 +257,12 @@ mlii = df["MLII"].values
 v5 = df["V5"].values
 pos = df["Temp"].values
 
+
+band_filter_memory = get_memory_usage()
 mlii_filter = band_filter(mlii)
 v5_filter = band_filter(v5)
+band_filter_memory = get_memory_usage() - band_filter_memory
+
 
 ##Adequando posições dos picos R
 for index in range(len(r_peak)):
@@ -270,24 +295,44 @@ for index in range(len(r_peak)):
     loc_r_peak.append(r_peak[index])
 
 #Transformando em dataset
+
+
+extra_code_pd_memory = get_memory_usage()
 df_mlii = pd.DataFrame(bat_mlii)
 df_v5 = pd.DataFrame(bat_v5)
+extra_code_pd_memory = get_memory_usage() - extra_code_pd_memory
+
 
 #Inserindo informação da localização do pico R
 df_mlii["R Peak"] = loc_r_peak
 df_v5["R Peak"] = loc_r_peak
 
 #Extrair caracterísitcas temporais
+
+
+carac_temp_memory = get_memory_usage()
 df_mlii = carac_temp(df_mlii)
 df_v5 = carac_temp(df_v5)
+carac_temp_memory = get_memory_usage() - carac_temp_memory
+
 
 #Extrair caracterísitcas morfológicas
+
+
+carac_morf_memory = get_memory_usage()
 df_mlii = carac_morf(df_mlii)
 df_v5 = carac_morf(df_v5)
+carac_morf_memory = get_memory_usage() - carac_morf_memory
+
 
 ##Consolidar dataset
 #Convertendo Dataset para matriz de vetores numpy
+
+
+adeq_dts_memory = get_memory_usage()
 base_MLII,base_V5 = adeq_dts(df_mlii,df_v5)
+adeq_dts_memory = get_memory_usage() - adeq_dts_memory
+
 
 base_MLII = np.asarray(base_MLII)
 base_V5 = np.asarray(base_V5)
@@ -300,8 +345,9 @@ type_sig = 4  # Number of departments for predictions
 ml2_input = keras.Input(batch_size = 8,shape=(size_sig,1), name="MLII")  # Variable-length sequence of ints
 v5_input = keras.Input(batch_size = 8,shape=(size_sig,1), name="V5")  # Variable-length sequence of ints
 
-ml2_features = layers.LSTM(50)(ml2_input)
 
+extra_code_lstm_memory = get_memory_usage()
+ml2_features = layers.LSTM(50)(ml2_input)
 v5_features = layers.LSTM(50)(v5_input)
 
 # Merge all available features into a single large vector via concatenation
@@ -311,6 +357,9 @@ x = layers.concatenate([ml2_features, v5_features])
 signal_pred = layers.Dense(5, name="signal_type")(x)
 # Stick a department classifier on top of the features
 department_pred = layers.Dense(type_sig, name="department")(x)
+extra_code_lstm_memory = get_memory_usage() - extra_code_lstm_memory
+
+
 # Instantiate an end-to-end model predicting both priority and department
 model = keras.Model(
     inputs=[ml2_input, v5_input],
@@ -327,18 +376,49 @@ model.compile(
     metrics=['accuracy'],
 )
 
+
+extra_code_load_h5_memory = get_memory_usage()
 model.load_weights("./200_model_900.h5")
+extra_code_load_h5_memory = get_memory_usage() - extra_code_load_h5_memory
+
 
 #Aplicar a classificação da batida através do modelo carregado
 #model = keras.saving.load_model('./200_model_900.h5')
 
+
+extra_code_predict_h5_memory = get_memory_usage()
 predic = model.predict([base_MLII,base_V5])
+extra_code_predict_h5_memory = get_memory_usage() - extra_code_predict_h5_memory
+
 
 #Transformar a predição em um vetor de saída
 #Identificando batida através de predição
+
+tpSig_predc_memory = get_memory_usage()
 vetor_final_predic = tpSig_predc(predic)
+tpSig_predc_memory = get_memory_usage() - tpSig_predc_memory
 
-final_memory = get_memory_usage() - start_memory
+extra_code_memory = get_memory_usage() - extra_code_memory
+total_code_memory = get_memory_usage() - total_code_memory
 
-print(final_memory)
+def getTotalMemoryCode():
+  print(f'Memoria de todo o código executar: {total_code_memory}')
+  
+def getExtraCodeMemory():
+  print(f'Memória do carregamento do csv: {extra_code_csv_memory}')
+  print(f'Memória do carregamento do txt: {extra_code_txt_memory}')
+  print(f'Memória do carregamento do H5: {extra_code_load_h5_memory}')
+  print(f'Memória de execução do predict H5: {extra_code_predict_h5_memory}')
+  print(f'Memória do PD: {extra_code_pd_memory}')
+  print(f'Memória do LSTM: {extra_code_lstm_memory}')
+  
+def getMemoryByFunction():
+  print(f'band_filter: {band_filter_memory}')
+  print(f'carac_temp: {carac_temp_memory}')
+  print(f'carac_morf: {carac_morf_memory}')
+  print(f'adeq_dts: {adeq_dts_memory}')
+  print(f'tpSig_predc: {tpSig_predc_memory}')
 
+getMemoryByFunction()
+getExtraCodeMemory()
+getTotalMemoryCode()
