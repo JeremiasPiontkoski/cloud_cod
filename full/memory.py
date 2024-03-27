@@ -17,9 +17,7 @@ extra_code_memory = 0
 
 def get_memory_usage():
     process = psutil.Process(os.getpid())
-    # mem = prof'TIME PD: {time_pd}')
-# print(f'TIME LSTM: {lstm_time}')
-cess.memory_info().rss  #Bytes
+    # mem = process.memory_info().rss  #Bytes
     mem = process.memory_info().rss / (1024 ** 2)  # Converte para megabytes
     return mem
 
