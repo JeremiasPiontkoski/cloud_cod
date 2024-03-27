@@ -430,12 +430,12 @@ def getTotalTimeByFunction():
   print(f'tpSig_predc: {tpSig_predc_time}') 
   # getTotalTimeFunctions()
   
-getTotalTimeByFunction()
-getExtraCodeTime()
+# getTotalTimeByFunction()
+# getExtraCodeTime()
 getTotalTimeCode()
 
-print(f'TIME PD: {time_pd}')
-print(f'TIME LSTM: {lstm_time}')
+# print(f'TIME PD: {time_pd}')
+# print(f'TIME LSTM: {lstm_time}')
 
 #FUNCIONANDO -> band_filter_time, carac_temp_time, carac_morf_time, adeq_dts_time,extraTime
 #FUNCIONA -> tpSig_predc_time --> O resultado final é uma notação científica. Geralmente x^05
